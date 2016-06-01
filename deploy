@@ -1,0 +1,56 @@
+#!/bin/bash -ex
+
+INSTANCE=maas
+DISTRO=xenial
+PPA=ppa:maas-maintainers/experimental3
+PROFILE=root
+
+TESTNET_IP=172.16.99.2
+TESTNET_NETMASK=255.255.255.0
+
+BOOT_SOURCE_URL="http://172.16.42.88/images/ephemeral-v2/daily/"
+
+aoi launch $DISTRO $INSTANCE
+
+# Enable SSH access for the root account.
+# This allows us to easily redeploy MAAS components using a shortcut script.
+aoi-ssh $INSTANCE sudo cp -r --no-preserve=ownership /home/ubuntu/.ssh /root
+
+# Configure the test network with a static IP address.
+TESTNET=$(aoi-ssh maas ifconfig -a | grep $(aoi-get-mac testnet-maas) | awk '{ print $1 }')
+aoi-ssh root@$INSTANCE "cat >> /etc/network/interfaces.d/51-testnet.cfg <<EOF
+auto $TESTNET
+iface $TESTNET inet static
+    address $TESTNET_IP
+    netmask $TESTNET_NETMASK
+EOF"
+aoi-ssh root@$INSTANCE ifup $TESTNET
+
+if [ "$PPA" != "" ]; then
+    aoi-ssh $INSTANCE sudo apt-add-repository -y $PPA
+fi
+aoi-ssh $INSTANCE sudo apt-get update
+aoi-ssh $INSTANCE sudo apt-get dist-upgrade -yu
+aoi-ssh $INSTANCE sudo apt-get install -y maas jq
+
+# Wait for the API to be available
+echo "Waiting for MAAS region API to become available..."
+aoi-ssh maas "while ! curl -I --silent --fail http://localhost:5240/MAAS ; do sleep .5; done"
+
+# Ater MAAS is installed, first create an admin user.
+aoi-ssh $INSTANCE sudo maas-region createadmin --username root --password qwe123 --email root@example.com
+
+# ...then grab an API key and log in via the CLI.
+API_KEY=$(aoi-ssh $INSTANCE sudo maas-region apikey --username root)
+aoi-ssh $INSTANCE maas login $PROFILE http://localhost:5240/MAAS/ $API_KEY
+
+# Adjust URL if needed and import boot images
+if [ "$BOOT_SOURCE_URL" != "" ]; then
+    echo "Setting boot source URL to: $BOOT_SOURCE_URL"
+    BOOT_SOURCE_ID=$(aoi-ssh $INSTANCE "maas $PROFILE boot-sources read | jq '.[0].id'")
+    aoi-ssh $INSTANCE maas $PROFILE boot-source update $BOOT_SOURCE_ID url=$BOOT_SOURCE_URL
+fi
+echo "Importing boot resources..."
+aoi-ssh $INSTANCE maas $PROFILE boot-resources import
+BOOT_RESOURCE_ID=$(aoi-ssh $INSTANCE maas $PROFILE boot-resources read | jq '.[0].id')
+aoi-ssh $INSTANCE "while [ \"\$(maas $PROFILE boot-resource read $BOOT_RESOURCE_ID | jq '.[] | .[]? | .complete')\" != \"true\" ]; do sleep 0.5; done"
