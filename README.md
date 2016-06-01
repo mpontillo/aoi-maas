@@ -14,9 +14,20 @@ then
     $ git clone https://github.com/pontillo/aoi-maas.git
     $ cd aoi-maas
     $ ./deploy
-    $ ./init-chassis
+
+At this point you should have a fully functional (almost) MAAS. You'll
+now need to add your SSH keys and configure DHCP, then you can start
+commissioning nodes!
+
+To grab the IP address of your new MAAS, you can use:
+
     $ aoi-get-ip-via-arp maas
     <maas-ip>
+
+To create some virutal machines on the local hypervisor and then commission
+them, you can do:
+
+    $ ./init-chassis
 
 The default MAAS username is `root` with the password `qwe123`.
 
