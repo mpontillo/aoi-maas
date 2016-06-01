@@ -23,8 +23,8 @@ echo "Password: $PASSWORD"
 # These might already be created, so we won't worry if it fails.
 aoi-create-testhost pxe1 || true
 aoi-create-testhost pxe2 || true
-aoi-create-testhost pxe-bond1 || true
-aoi-create-testhost pxe-bond2 || true
+aoi-create-testhost-bond pxe-bond1 || true
+aoi-create-testhost-bond pxe-bond2 || true
 
 aoi-ssh $INSTANCE maas $PROFILE machines add-chassis chassis_type=virsh hostname=qemu+ssh://libvirt-qemu@$BRIDGE_IP/system password=$PASSWORD prefix_filter=pxe
 echo ""
