@@ -32,3 +32,8 @@ SSH port forwarding to access the MAAS UI from another system:
     ssh -L8181:<maas-ip>:5240
 
 Then access `http://localhost:8181/MAAS/` on your local system.
+
+## To-do List
+
+ * Set up testnet subnet with a dynamic range
+ * Add SSH keys
