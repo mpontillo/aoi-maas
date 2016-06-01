@@ -31,7 +31,10 @@ if [ "$PPA" != "" ]; then
 fi
 aoi-ssh $INSTANCE sudo apt-get update
 aoi-ssh $INSTANCE sudo apt-get dist-upgrade -yu
-aoi-ssh $INSTANCE sudo apt-get install -y maas jq
+
+# We'll need MAAS (obviously), and also jq to help parse MAAS API output.
+# Also, libvirt-bin so that we can add the hypervisor as a chassis.
+aoi-ssh $INSTANCE sudo apt-get install -y maas jq libvirt-bin
 
 # Wait for the API to be available
 echo "Waiting for MAAS region API to become available..."
@@ -54,3 +57,6 @@ echo "Importing boot resources..."
 aoi-ssh $INSTANCE maas $PROFILE boot-resources import
 BOOT_RESOURCE_ID=$(aoi-ssh $INSTANCE maas $PROFILE boot-resources read | jq '.[0].id')
 aoi-ssh $INSTANCE "while [ \"\$(maas $PROFILE boot-resource read $BOOT_RESOURCE_ID | jq '.[] | .[]? | .complete')\" != \"true\" ]; do sleep 0.5; done"
+
+RACK_ID=$(aoi-ssh $INSTANCE "maas $PROFILE rack-controllers read | jq --raw-output '.[0].system_id'")
+aoi-ssh $INSTANCE "while [ \"\$(maas $PROFILE rack-controller list-boot-images $RACK_ID | jq --raw-output '.status')\" != \"synced\" ]; do sleep 0.5; done"
