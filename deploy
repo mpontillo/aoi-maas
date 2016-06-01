@@ -55,30 +55,7 @@ if [ "$BOOT_SOURCE_URL" != "" ]; then
     BOOT_SOURCE_ID=$(aoi-ssh $INSTANCE "maas $PROFILE boot-sources read | jq '.[0].id'")
     aoi-ssh $INSTANCE maas $PROFILE boot-source update $BOOT_SOURCE_ID url=$BOOT_SOURCE_URL
 fi
-echo "Importing boot resources..."
-aoi-ssh $INSTANCE maas $PROFILE boot-resources import
 
-function get_boot_resource_id {
-    while [ 1 ]; do
-        BOOT_RESOURCE_ID=$(aoi-ssh $INSTANCE maas $PROFILE boot-resources read | jq '.[0].id')
-        if [ "$BOOT_RESOURCE_ID" != "null" ]; then
-            echo "$BOOT_RESOURCE_ID"
-            return
-        fi
-        sleep 0.5
-    done
-}
-
-echo "Waiting for region to import boot resources..."
-BOOT_RESOURCE_ID=$(get_boot_resource_id)
-aoi-ssh $INSTANCE "while [ \"\$(maas $PROFILE boot-resource read $BOOT_RESOURCE_ID | jq '.[] | .[]? | .complete')\" != \"true\" ]; do sleep 0.5; done"
-
-function get_rack_id {
-    aoi-ssh $INSTANCE sudo cat /var/lib/maas/maas_id
-}
-
-echo "Waiting for rack to import boot resources..."
-RACK_ID=$(get_rack_id)
-aoi-ssh $INSTANCE "while [ \"\$(maas $PROFILE rack-controller list-boot-images $RACK_ID | jq --raw-output '.status')\" != \"synced\" ]; do sleep 0.5; done"
+./import-boot-resources
 
 echo "Done; MAAS is ready!"
