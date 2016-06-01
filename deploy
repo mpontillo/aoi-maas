@@ -12,6 +12,8 @@ TESTNET_NETMASK=255.255.255.0
 
 BOOT_SOURCE_URL="http://172.16.42.88/images/ephemeral-v2/daily/"
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 aoi launch $DISTRO $INSTANCE
 
 # Enable SSH access for the root account.
@@ -56,6 +58,6 @@ if [ "$BOOT_SOURCE_URL" != "" ]; then
     aoi-ssh $INSTANCE maas $PROFILE boot-source update $BOOT_SOURCE_ID url=$BOOT_SOURCE_URL
 fi
 
-./import-boot-resources
+$SCRIPT_DIR/import-boot-resources
 
 echo "Done; MAAS is ready!"
