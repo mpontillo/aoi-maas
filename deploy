@@ -4,6 +4,8 @@ INSTANCE=maas
 DISTRO=xenial
 PPA=ppa:maas-maintainers/experimental3
 PROFILE=root
+MAAS_USER=root
+MAAS_PASSWORD=qwe123
 
 TESTNET_IP=172.16.99.2
 TESTNET_NETMASK=255.255.255.0
@@ -41,7 +43,7 @@ echo "Waiting for MAAS region API to become available..."
 aoi-ssh maas "while ! curl -I --silent --fail http://localhost:5240/MAAS ; do sleep .5; done"
 
 # Ater MAAS is installed, first create an admin user.
-aoi-ssh $INSTANCE sudo maas-region createadmin --username root --password qwe123 --email root@example.com
+aoi-ssh $INSTANCE sudo maas-region createadmin --username $MAAS_USER --password $MAAS_PASSWORD --email root@example.com
 
 # ...then grab an API key and log in via the CLI.
 API_KEY=$(aoi-ssh $INSTANCE sudo maas-region apikey --username root)
@@ -55,8 +57,28 @@ if [ "$BOOT_SOURCE_URL" != "" ]; then
 fi
 echo "Importing boot resources..."
 aoi-ssh $INSTANCE maas $PROFILE boot-resources import
-BOOT_RESOURCE_ID=$(aoi-ssh $INSTANCE maas $PROFILE boot-resources read | jq '.[0].id')
+
+function get_boot_resource_id {
+    while [ 1 ]; do
+        BOOT_RESOURCE_ID=$(aoi-ssh $INSTANCE maas $PROFILE boot-resources read | jq '.[0].id')
+        if [ "$BOOT_RESOURCE_ID" != "null" ]; then
+            echo "$BOOT_RESOURCE_ID"
+            return
+        fi
+        sleep 0.5
+    done
+}
+
+echo "Waiting for region to import boot resources..."
+BOOT_RESOURCE_ID=$(get_boot_resource_id)
 aoi-ssh $INSTANCE "while [ \"\$(maas $PROFILE boot-resource read $BOOT_RESOURCE_ID | jq '.[] | .[]? | .complete')\" != \"true\" ]; do sleep 0.5; done"
 
-RACK_ID=$(aoi-ssh $INSTANCE "maas $PROFILE rack-controllers read | jq --raw-output '.[0].system_id'")
+function get_rack_id {
+    aoi-ssh $INSTANCE sudo cat /var/lib/maas/maas_id
+}
+
+echo "Waiting for rack to import boot resources..."
+RACK_ID=$(get_rack_id)
 aoi-ssh $INSTANCE "while [ \"\$(maas $PROFILE rack-controller list-boot-images $RACK_ID | jq --raw-output '.status')\" != \"synced\" ]; do sleep 0.5; done"
+
+echo "Done; MAAS is ready!"
