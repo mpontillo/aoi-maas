@@ -40,6 +40,11 @@ aoi-ssh $INSTANCE sudo apt-get dist-upgrade -yu
 # Also, libvirt-bin so that we can add the hypervisor as a chassis.
 aoi-ssh $INSTANCE sudo apt-get install -y maas jq libvirt-bin
 
+# Update the maas_url in the rack config, because the nodes won't be able
+# to contact MAAS on the management interface on virbr0; they can only
+# access the test network.
+aoi-ssh $INSTANCE sudo maas-rack config --region-url http://$TESTNET_IP:5240/MAAS
+
 # Wait for the API to be available
 echo "Waiting for MAAS region API to become available..."
 aoi-ssh maas "while ! curl -I --silent --fail http://localhost:5240/MAAS ; do sleep .5; done"
