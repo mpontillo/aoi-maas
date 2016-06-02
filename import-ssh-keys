@@ -1,0 +1,8 @@
+#!/bin/bash
+
+INSTANCE=maas
+PROFILE=root
+
+aoi-get-authorized-keys | tr '\n' '\0' | xargs -0 --max-args=1 --replace={} \
+    aoi-ssh $INSTANCE maas $PROFILE sshkeys create key=\'{}\'
+

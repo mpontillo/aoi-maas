@@ -64,5 +64,9 @@ if [ "$BOOT_SOURCE_URL" != "" ]; then
 fi
 
 $SCRIPT_DIR/import-boot-resources
+$SCRIPT_DIR/import-ssh-keys
 
-echo "Done; MAAS is ready!"
+echo "MAAS is available at: http://$(aoi-get-ip-via-arp maas)/MAAS/"
+echo "    Username: $MAAS_USER"
+echo "    Password: $MAAS_PASSWORD"
+echo "Please configure your DHCP subnet(s)."
