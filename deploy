@@ -46,6 +46,7 @@ aoi-ssh $INSTANCE sudo apt-get install -y maas jq libvirt-bin
 # to contact MAAS on the management interface on virbr0; they can only
 # access the test network.
 aoi-ssh $INSTANCE sudo maas-rack config --region-url http://$TESTNET_IP:5240/MAAS
+aoi-ssh $INSTANCE sudo service maas-rack restart
 
 # Wait for the API to be available
 echo "Waiting for MAAS region API to become available..."
