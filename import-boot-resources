@@ -19,6 +19,8 @@ function get_boot_resource_id {
     done
 }
 
+echo ""
+echo ""
 echo "Waiting for region to import boot resources..."
 BOOT_RESOURCE_ID=$(get_boot_resource_id)
 aoi-ssh $INSTANCE "while [ \"\$(maas $PROFILE boot-resource read $BOOT_RESOURCE_ID | jq '.[] | .[]? | .complete')\" != \"true\" ]; do sleep 0.5; done"
@@ -29,6 +31,7 @@ function get_rack_id {
     aoi-ssh $INSTANCE sudo cat /var/lib/maas/maas_id
 }
 
+echo ""
 echo "Waiting for rack to import boot resources..."
 RACK_ID=$(get_rack_id)
 aoi-ssh $INSTANCE "while [ \"\$(maas $PROFILE rack-controller list-boot-images $RACK_ID | jq --raw-output '.status')\" != \"synced\" ]; do sleep 0.5; done"
