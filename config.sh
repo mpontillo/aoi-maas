@@ -12,7 +12,7 @@ TESTNET_DYN_START=172.16.99.150
 TESTNET_DYN_END=172.16.99.199
 TESTNET_NETMASK=255.255.255.0
 
-BOOT_SOURCE_URL="$(aoi config get images_url '')"
+BOOT_SOURCE_URL="$(aoi config get maas_images_url '')"
 PPA="$(aoi config get maas_ppa ppa:maas-maintainers/experimental3)"
 
 LIBVIRT_USER="$(aoi config get libvirt_remote_user libvirt-qemu)"

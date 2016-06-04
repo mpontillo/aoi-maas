@@ -47,9 +47,9 @@ You will be logged into the MAAS CLI under the `root` profile:
 ### Setting the Image URL
 
 If you want to use a local mirror for your images, you can use the `aoi config`
-command to set the `images_url` to your local mirror. For example:
+command to set the `maas_images_url` to your local mirror. For example:
 
-    $ aoi config set images_url http://172.16.42.88/images/ephemeral-v2/daily/
+    $ aoi config set maas_images_url http://172.16.42.88/images/ephemeral-v2/daily/
 
 The configuration is stored in `~/.aoi/config` in a JSON file.
 
@@ -61,8 +61,3 @@ SSH port forwarding to access the MAAS UI from another system:
     $ ssh -L8181:<maas-ip>:5240
 
 Then access `http://localhost:8181/MAAS/` on your local system.
-
-## To-do List
-
- * Set up testnet subnet with a dynamic range
- * Add SSH keys
