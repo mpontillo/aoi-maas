@@ -1,7 +1,7 @@
 #!/bin/bash
 
-INSTANCE=maas
-PROFILE=root
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source $SCRIPT_DIR/config.sh
 
 aoi-get-authorized-keys | tr '\n' '\0' | xargs -0 --max-args=1 --replace={} \
     aoi-ssh $INSTANCE maas $PROFILE sshkeys create key=\'{}\'

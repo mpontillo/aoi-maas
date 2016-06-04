@@ -1,24 +1,21 @@
 #!/bin/bash -ex
 
-LIBVIRT_USER=libvirt-qemu
-PASSWORD=qwe123
-
-INSTANCE=maas
-PROFILE=root
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source $SCRIPT_DIR/config.sh
 
 BRIDGE=$(aoi-get-libvirt-bridge default)
 BRIDGE_IP=$(ip addr show dev $BRIDGE | grep '^    inet' | awk '{print $2}' | cut -d '/' -f 1)
 
-
 if ! id libvirt-qemu | awk '{ print $3 }' | grep '(libvirtd)' | grep -q '(kvm)'; then
-    echo "Adding $LIBVIRT_USER to the libvirtd group, and setting password..."
+    echo "Adding $LIBVIRT_USER to the libvirtd group..."
     sudo usermod -a -G libvirtd,kvm -s /bin/bash $LIBVIRT_USER
-    echo "$LIBVIRT_USER:$PASSWORD" | sudo chpasswd
 fi
+echo "Setting the password for $LIBVIRT_USER..."
+echo "$LIBVIRT_USER:$LIBVIRT_PASSWORD" | sudo chpasswd
 
 echo "libvirt should now be available remotely."
 echo "URL: qemu+ssh://$LIBVIRT_USER@$BRIDGE_IP/system"
-echo "Password: $PASSWORD"
+echo "Password: $LIBVIRT_PASSWORD"
 
 # These might already be created, so we won't worry if it fails.
 aoi-create-testhost pxe1 || true
@@ -26,5 +23,7 @@ aoi-create-testhost pxe2 || true
 aoi-create-testhost-bond pxe-bond1 || true
 aoi-create-testhost-bond pxe-bond2 || true
 
-aoi-ssh $INSTANCE maas $PROFILE machines add-chassis chassis_type=virsh hostname=qemu+ssh://libvirt-qemu@$BRIDGE_IP/system password=$PASSWORD prefix_filter=pxe
+aoi-ssh $INSTANCE maas $PROFILE machines add-chassis \
+    chassis_type=virsh hostname=qemu+ssh://libvirt-qemu@$BRIDGE_IP/system \
+    password=$LIBVIRT_PASSWORD prefix_filter=pxe
 echo ""

@@ -1,9 +1,7 @@
 #!/bin/bash -e
 
-INSTANCE=maas
-PROFILE=root
-
-BOOT_SOURCE_URL="http://172.16.42.88/images/ephemeral-v2/daily/"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source $SCRIPT_DIR/config.sh
 
 echo "Importing boot resources..."
 aoi-ssh $INSTANCE maas $PROFILE boot-resources import
