@@ -1,0 +1,12 @@
+#!/bin/bash
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source $SCRIPT_DIR/config.sh
+
+HOSTNAME=$1
+shift
+
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o LogLevel=quiet \
+    ubuntu@$HOSTNAME \
+    -oProxyCommand="ssh ubuntu@$(aoi-get-ip-via-arp $INSTANCE) nc -q0 %h %p" \
+    "$@"
