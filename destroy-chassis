@@ -1,0 +1,8 @@
+#!/bin/bash
+
+aoi-delete pxe1
+aoi-delete pxe2
+aoi-delete pxe-bond1
+aoi-delete pxe-bond2
+aoi-delete pxe-disks1
+aoi-delete pxe-disks2

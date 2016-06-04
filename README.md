@@ -27,7 +27,14 @@ To grab the IP address of your new MAAS, you can use:
 To create some virutal machines on the local hypervisor and then commission
 them, you can do:
 
+    $ ./configure-libvirt-remote
     $ ./init-chassis
+
+You'll only need to run `configure-libvirt-remote` once. That configures your
+local libvirt so that MAAS inside the virtual machine can access it. You can
+set a custom password by running:
+
+    $ aoi config set libvirt_remote_password <your-desired-password>
 
 The default MAAS username is `root` with the password `qwe123`.
 

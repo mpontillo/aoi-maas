@@ -1,0 +1,18 @@
+#!/bin/bash -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source $SCRIPT_DIR/config.sh
+
+BRIDGE=$(aoi-get-libvirt-bridge default)
+BRIDGE_IP=$(ip addr show dev $BRIDGE | grep '^    inet' | awk '{print $2}' | cut -d '/' -f 1)
+
+if ! id libvirt-qemu | awk '{ print $3 }' | grep '(libvirtd)' | grep -q '(kvm)'; then
+    echo "Adding $LIBVIRT_USER to the libvirtd group..."
+    sudo usermod -a -G libvirtd,kvm -s /bin/bash $LIBVIRT_USER
+fi
+echo "Setting the password for $LIBVIRT_USER..."
+echo "$LIBVIRT_USER:$LIBVIRT_PASSWORD" | sudo chpasswd
+
+echo "libvirt should now be available remotely."
+echo "URL: qemu+ssh://$LIBVIRT_USER@$BRIDGE_IP/system"
+echo "Password: $LIBVIRT_PASSWORD"
