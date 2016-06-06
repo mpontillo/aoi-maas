@@ -1,0 +1,16 @@
+#!/bin/bash
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source $SCRIPT_DIR/config.sh
+
+# By now the rack should be registered (which means the subnet should exist),
+# so we can create the DHCP range and enable DHCP.
+aoi-ssh $INSTANCE maas $PROFILE ipranges create \
+    type=dynamic start_ip=$TESTNET_DYN_START end_ip=$TESTNET_DYN_END
+
+# We cheat a little bit here because we know testnet will come up on
+# fabric-1's default VLAN.
+aoi-ssh $INSTANCE "maas $PROFILE vlan update fabric-1 0 primary_rack=\$(sudo cat /var/lib/maas/maas_id) dhcp_on=true"
+
+aoi-ssh $INSTANCE maas $PROFILE subnet update $TESTNET_CIDR gateway_ip=$TESTNET_GW
+

@@ -32,4 +32,4 @@ function get_rack_id {
 echo ""
 echo "Waiting for rack to import boot resources..."
 RACK_ID=$(get_rack_id)
-aoi-ssh $INSTANCE "while [ \"\$(maas $PROFILE rack-controller list-boot-images $RACK_ID | jq --raw-output '.status')\" != \"synced\" ]; do sleep 0.5; done"
+aoi-ssh $INSTANCE "while [ \"\$(maas $PROFILE rack-controller list-boot-images $RACK_ID | jq --raw-output '.status' 2> /dev/null)\" != \"synced\" ]; do sleep 0.5; done"
