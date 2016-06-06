@@ -3,6 +3,8 @@ DISTRO="$(aoi config get maas_distro xenial)"
 MAAS_USER="$(aoi config get maas_user root)"
 MAAS_PASSWORD="$(aoi config get maas_password qwe123)"
 
+API_KEY="$(aoi config get maas_api_key '')"
+
 PROFILE="$(aoi config get maas_profile root)"
 
 TESTNET_CIDR="172.16.99.0/24"

@@ -1,61 +1,106 @@
-#!/bin/bash -ex
+#!/bin/bash -e
+
+TMPDIR="$(mktemp -d)"
+if [ "$1" == "--verbose" -o "$1" == "-v" ]; then
+    VERBOSE=1
+    echo "Log directory: $TMPDIR"
+    shift
+else
+    VERBOSE=0
+fi
+
+function cleanup {
+    if [ $VERBOSE -eq 0 ]; then
+        rm -rf "$TMPDIR"
+    else
+        echo ""
+        echo "Logging is available in: $TMPDIR"
+    fi
+}
+trap cleanup EXIT
+
+function run {
+    echo "[$(date '+%H:%M:%S')] $1..."
+    shift
+    LOG_FILE="$TMPDIR/$(printf "deploy.log")"
+    echo "$@" >> $LOG_FILE
+    echo "$@" >> $LOG_FILE.err
+    "$@" >> $LOG_FILE 2>> $LOG_FILE.err || \
+        (echo ""; cat $LOG_FILE ; cat $LOG_FILE.err ; printf "\nCommand failed: \n    $@\n" && exit 1)
+}
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+aoi config delete maas_api_key || true
 source $SCRIPT_DIR/config.sh
 
-aoi launch "$DISTRO" "$INSTANCE"
+run "Creating virtual machine" aoi launch "$DISTRO" "$INSTANCE"
+
+if [ "$PPA" != "" ]; then
+    run "Adding MAAS PPA" aoi-ssh $INSTANCE sudo apt-add-repository -y $PPA
+fi
+run "Updating apt sources" aoi-ssh $INSTANCE sudo apt-get update
+run "Upgrading packages" aoi-ssh $INSTANCE sudo apt-get dist-upgrade -yu
+run "Installing bridge-utils" aoi-ssh $INSTANCE sudo apt-get install bridge-utils
 
 # Enable SSH access for the root account.
 # This allows us to easily redeploy MAAS components using a shortcut script.
-aoi-ssh $INSTANCE sudo cp -r --no-preserve=ownership /home/ubuntu/.ssh /root
+run "Enabling root SSH access" aoi-ssh $INSTANCE sudo cp -r --no-preserve=ownership /home/ubuntu/.ssh /root
 
 # Configure the test network with a static IP address.
 TESTNET=$(aoi-ssh maas ifconfig -a | grep $(aoi-get-mac testnet-maas) | awk '{ print $1 }')
-aoi-ssh root@$INSTANCE "cat >> /etc/network/interfaces.d/51-testnet.cfg <<EOF
+run "Adding private bridge interface" \
+    aoi-ssh root@$INSTANCE "cat >> /etc/network/interfaces.d/51-testnet.cfg <<EOF
 auto $TESTNET
-iface $TESTNET inet static
+iface $TESTNET inet manual
+
+auto br0
+iface br0 inet static
+    bridge_ports $TESTNET
+    bridge_stp off
+    bridge_waitport 0
+    bridge_fd 0
     address $TESTNET_IP
     netmask $TESTNET_NETMASK
 EOF"
-aoi-ssh root@$INSTANCE ifup $TESTNET
-
-if [ "$PPA" != "" ]; then
-    aoi-ssh $INSTANCE sudo apt-add-repository -y $PPA
-fi
-aoi-ssh $INSTANCE sudo apt-get update
-aoi-ssh $INSTANCE sudo apt-get dist-upgrade -yu
+run "Bringing up bridge interface" aoi-ssh root@$INSTANCE "ifup $TESTNET ; ifup br0"
 
 # We'll need MAAS (obviously), and also jq to help parse MAAS API output.
 # Also, libvirt-bin so that we can add the hypervisor as a chassis.
-aoi-ssh $INSTANCE sudo apt-get install -y maas jq libvirt-bin
+run "Installing MAAS" aoi-ssh $INSTANCE sudo apt-get install -y maas jq libvirt-bin
 
 # Update the maas_url in the rack config, because the nodes won't be able
 # to contact MAAS on the management interface on virbr0; they can only
 # access the test network.
-aoi-ssh $INSTANCE sudo maas-rack config --region-url http://$TESTNET_IP:5240/MAAS
-aoi-ssh $INSTANCE sudo service maas-rackd restart
+run "Configuring MAAS region URL" aoi-ssh $INSTANCE sudo maas-rack config --region-url http://$TESTNET_IP:5240/MAAS
+run "Restarting MAAS rack service" aoi-ssh $INSTANCE sudo service maas-rackd restart
 
 # Wait for the API to be available
-echo "Waiting for MAAS region API to become available..."
-aoi-ssh maas "while ! curl -I --silent --fail http://localhost:5240/MAAS ; do sleep .5; done"
+run "Waiting for the MAAS region API to become available" \
+    aoi-ssh maas "while ! curl -I --silent --fail http://localhost:5240/MAAS ; do sleep .5; done"
 
 # Ater MAAS is installed, first create an admin user.
-aoi-ssh $INSTANCE sudo maas-region createadmin --username $MAAS_USER --password $MAAS_PASSWORD --email root@example.com
+run "Creating MAAS admin user" \
+    aoi-ssh $INSTANCE sudo maas-region createadmin \
+    --username $MAAS_USER --password $MAAS_PASSWORD --email root@example.com
 
 # ...then grab an API key and log in via the CLI.
 API_KEY=$(aoi-ssh $INSTANCE sudo maas-region apikey --username root)
-aoi-ssh $INSTANCE maas login $PROFILE http://localhost:5240/MAAS/ $API_KEY
+run "Caching MAAS API key (see 'aoi config get maas_api_key')" \
+    aoi config set maas_api_key "$API_KEY"
+run "Logging into MAAS CLI using profile: $PROFILE" \
+    aoi-ssh $INSTANCE maas login $PROFILE http://localhost:5240/MAAS/ "$API_KEY"
 
 # Adjust URL if needed and import boot images
 if [ "$BOOT_SOURCE_URL" != "" ]; then
-    echo "Setting boot source URL to: $BOOT_SOURCE_URL"
     BOOT_SOURCE_ID=$(aoi-ssh $INSTANCE "maas $PROFILE boot-sources read | jq '.[0].id'")
-    aoi-ssh $INSTANCE maas $PROFILE boot-source update $BOOT_SOURCE_ID url=$BOOT_SOURCE_URL
+    run "Updating boot source URL (id $BOOT_SOURCE_ID) to: $BOOT_SOURCE_URL" \
+        aoi-ssh $INSTANCE maas $PROFILE \
+            boot-source update $BOOT_SOURCE_ID url=$BOOT_SOURCE_URL
 fi
 
-$SCRIPT_DIR/import-boot-resources
-$SCRIPT_DIR/import-ssh-keys
-$SCRIPT_DIR/configure-networking
+run "Importing boot resources" $SCRIPT_DIR/import-boot-resources
+run "Importing SSH keys" $SCRIPT_DIR/import-ssh-keys
+run "Configuring MAAS networks for DHCP" $SCRIPT_DIR/configure-networking
 
 echo "MAAS is available at: http://$(aoi-get-ip-via-arp maas)/MAAS/"
 echo "    Username: $MAAS_USER"
