@@ -98,6 +98,10 @@ if [ "$BOOT_SOURCE_URL" != "" ]; then
             boot-source update $BOOT_SOURCE_ID url=$BOOT_SOURCE_URL
 fi
 
+if [ "$UBUNTU_ARCHIVE_HOST" != "" ]; then
+    aoi-ssh $INSTANCE maas $PROFILE maas set-config name=main_archive value=http://$UBUNTU_ARCHIVE_HOST/ubuntu
+fi
+
 run "Importing boot resources" $SCRIPT_DIR/import-boot-resources
 run "Importing SSH keys" $SCRIPT_DIR/import-ssh-keys
 run "Configuring MAAS networks for DHCP" $SCRIPT_DIR/configure-networking

@@ -15,6 +15,7 @@ TESTNET_DYN_END=172.16.99.199
 TESTNET_NETMASK=255.255.255.0
 
 BOOT_SOURCE_URL="$(aoi config get maas_images_url '')"
+UBUNTU_ARCHIVE_HOST="$(aoi config get ubuntu_archive_host '')"
 PPA="$(aoi config get maas_ppa ppa:maas-maintainers/experimental3)"
 
 LIBVIRT_USER="$(aoi config get libvirt_remote_user libvirt-qemu)"
