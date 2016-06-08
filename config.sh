@@ -1,11 +1,11 @@
 INSTANCE="$(aoi config get maas_instance maas)"
 DISTRO="$(aoi config get maas_distro xenial)"
-MAAS_USER="$(aoi config get maas_user root)"
-MAAS_PASSWORD="$(aoi config get maas_password qwe123)"
+MAAS_USER="$(aoi config get maas_user admin)"
+MAAS_PASSWORD="$(aoi config get maas_password test)"
 
 API_KEY="$(aoi config get maas_api_key '')"
 
-PROFILE="$(aoi config get maas_profile root)"
+PROFILE="$(aoi config get maas_profile admin)"
 
 TESTNET_CIDR="172.16.99.0/24"
 TESTNET_IP=172.16.99.2
