@@ -7,12 +7,14 @@ BRIDGE=$(aoi-get-libvirt-bridge default)
 BRIDGE_IP=$(ip addr show dev $BRIDGE | grep '^    inet' | awk '{print $2}' | cut -d '/' -f 1)
 
 # These might already be created, so we won't worry if it fails.
-aoi-create-testhost pxe1 || true
-aoi-create-testhost pxe2 || true
-aoi-create-testhost-bond pxe-bond1 || true
-aoi-create-testhost-bond pxe-bond2 || true
-aoi-create-testhost-with-disks pxe-disks1 || true
-aoi-create-testhost-with-disks pxe-disks2 || true
+$SCRIPT_DIR/create-testhost pxe1 || true
+$SCRIPT_DIR/create-testhost pxe2 || true
+$SCRIPT_DIR/create-testhost-bond pxe-bond1 || true
+$SCRIPT_DIR/create-testhost-bond pxe-bond2 || true
+$SCRIPT_DIR/create-testhost-with-disks pxe-disks1 || true
+$SCRIPT_DIR/create-testhost-with-disks pxe-disks2 || true
+$SCRIPT_DIR/create-testhost-with-vdisks pxe-vdisks1 || true
+$SCRIPT_DIR/create-testhost-with-vdisks pxe-vdisks2 || true
 
 aoi-ssh $INSTANCE maas $PROFILE machines add-chassis \
     chassis_type=virsh hostname=qemu+ssh://libvirt-qemu@$BRIDGE_IP/system \

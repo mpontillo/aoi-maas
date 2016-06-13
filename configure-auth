@@ -1,0 +1,19 @@
+#!/bin/bash -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source $SCRIPT_DIR/config.sh
+
+# Ater MAAS is installed, first create an admin user.
+echo "Creating MAAS admin user"
+aoi-ssh $INSTANCE sudo maas-region createadmin \
+    --username $MAAS_USER --password $MAAS_PASSWORD --email root@example.com
+
+# ...then grab an API key and log in via the CLI.
+API_KEY="$(aoi-ssh $INSTANCE sudo maas-region apikey --username $MAAS_USER)"
+
+echo "Caching MAAS API key (see 'aoi config get maas_api_key')"
+aoi config set maas_api_key "$API_KEY"
+
+echo "Logging into MAAS CLI using profile: $PROFILE"
+aoi-ssh $INSTANCE maas login $PROFILE http://localhost:5240/MAAS/ "$API_KEY"
+

@@ -1,0 +1,15 @@
+#!/bin/bash -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source $SCRIPT_DIR/config.sh
+
+if [ "$BOOT_SOURCE_URL" != "" ]; then
+    BOOT_SOURCE_ID=$(aoi-ssh $INSTANCE "maas $PROFILE boot-sources read | jq '.[0].id'")
+    echo "Updating boot source URL (id $BOOT_SOURCE_ID) to: $BOOT_SOURCE_URL"
+    aoi-ssh $INSTANCE maas $PROFILE \
+        boot-source update $BOOT_SOURCE_ID url=$BOOT_SOURCE_URL
+fi
+
+if [ "$UBUNTU_ARCHIVE_HOST" != "" ]; then
+    aoi-ssh $INSTANCE maas $PROFILE maas set-config name=main_archive value=http://$UBUNTU_ARCHIVE_HOST/ubuntu
+fi
