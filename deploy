@@ -33,7 +33,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 aoi config delete maas_api_key || true
 source $SCRIPT_DIR/config.sh
 
+export VIRT_CPUS=$MAAS_SERVER_CPUS
+export VIRT_RAM=$MAAS_SERVER_RAM
 run "Creating virtual machine" aoi launch "$DISTRO" "$INSTANCE"
+unset VIRT_CPUS
+unset VIRT_RAM
 
 if [ "$PPA" != "" ]; then
     run "Adding MAAS PPA" aoi-ssh $INSTANCE sudo apt-add-repository -y $PPA
@@ -74,11 +78,16 @@ run "Installing MAAS" aoi-ssh $INSTANCE sudo apt-get install -y maas jq libvirt-
 # to contact MAAS on the management interface on virbr0; they can only
 # access the test network.
 run "Configuring MAAS region URL" aoi-ssh $INSTANCE sudo maas-rack config --region-url http://$TESTNET_IP:5240/MAAS
-run "Restarting MAAS rack service" aoi-ssh $INSTANCE sudo service maas-rackd restart
+# run "Restarting MAAS rack service" aoi-ssh $INSTANCE sudo service maas-rackd restart
+run "Restarting MAAS" $SCRIPT_DIR/restart-maas
+run "Waiting for MAAS API to become available" $SCRIPT_DIR/wait-for-api
+run "Configuring authentication" $SCRIPT_DIR/configure-auth
+run "Configuring region" $SCRIPT_DIR/configure-region
 
-run "Waiting for MAAS API to become available..." $SCRIPT_DIR/wait-for-api
-run "Configuring authentication..." $SCRIPT_DIR/configure-auth
-run "Configuring region..." $SCRIPT_DIR/configure-region
+# We sadly "reboot" the MAAS service here to work around the fact that MAAS
+# may be automatically importing images from the default URL right now.
+run "Restarting MAAS" $SCRIPT_DIR/restart-maas
+
 run "Importing boot resources" $SCRIPT_DIR/import-boot-resources
 run "Importing SSH keys" $SCRIPT_DIR/import-ssh-keys
 run "Configuring MAAS networks for DHCP" $SCRIPT_DIR/configure-networking
