@@ -1,0 +1,12 @@
+#!/bin/bash -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source $SCRIPT_DIR/config.sh
+
+aoi-ssh $INSTANCE sudo service maas-rackd stop
+aoi-ssh $INSTANCE sudo service maas-regiond stop
+aoi-ssh $INSTANCE sudo service maas-regiond start
+aoi-ssh $INSTANCE sudo service maas-rackd start
+
+sleep 1  # Make sure MAAS goes offline.
+$SCRIPT_DIR/wait-for-api
