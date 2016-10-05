@@ -1,3 +1,4 @@
+IMAGES_DIR="$(aoi config get images_dir ~/.cloud-images)"
 INSTANCE="$(aoi config get maas_instance maas)"
 DISTRO="$(aoi config get maas_distro xenial)"
 MAAS_USER="$(aoi config get maas_user admin)"
