@@ -1,12 +1,12 @@
 #!/bin/bash -e
 
 TMPDIR="$(mktemp -d)"
+VERBOSE=0
+
 if [ "$1" == "--verbose" -o "$1" == "-v" ]; then
-    VERBOSE=1
+    let VERBOSE=$VERBOSE+1
     echo "Log directory: $TMPDIR"
     shift
-else
-    VERBOSE=0
 fi
 
 function cleanup {
@@ -19,14 +19,19 @@ function cleanup {
 }
 trap cleanup EXIT
 
+SCRIPT_NUM=0
+
 function run {
-    echo "[$(date '+%H:%M:%S')] $1..."
+    LOG_FILE=$(printf "$TMPDIR/%03d-deploy.log")
+    local pretty_log="$(echo "[$(date '+%H:%M:%S')] $1...")"
     shift
-    LOG_FILE="$TMPDIR/deploy.log"
+    echo "$pretty_log" >> $LOG_FILE
+    echo "$pretty_log" >> $LOG_FILE.err
     echo "$@" >> $LOG_FILE
     echo "$@" >> $LOG_FILE.err
     "$@" >> $LOG_FILE 2>> $LOG_FILE.err || \
         (echo ""; cat $LOG_FILE ; cat $LOG_FILE.err ; printf "\nCommand failed: \n    $@\n" && exit 1)
+    let SCRIPT_NUM=$SCRIPT_NUM+1
 }
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -38,6 +43,7 @@ export VIRT_RAM=$MAAS_SERVER_RAM
 run "Creating virtual machine" aoi launch "$DISTRO" "$INSTANCE"
 unset VIRT_CPUS
 unset VIRT_RAM
+
 
 if [ "$PPA" != "" ]; then
     run "Adding MAAS PPA" aoi-ssh $INSTANCE sudo apt-add-repository -y $PPA
