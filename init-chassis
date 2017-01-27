@@ -7,6 +7,7 @@ BRIDGE=$(aoi-get-libvirt-bridge default)
 BRIDGE_IP=$(ip addr show dev $BRIDGE | grep '^    inet' | awk '{print $2}' | cut -d '/' -f 1)
 
 # These might already be created, so we won't worry if it fails.
+$SCRIPT_DIR/create-bootstrap-testhost pxe-juju || true
 $SCRIPT_DIR/create-testhost pxe1 || true
 $SCRIPT_DIR/create-testhost pxe2 || true
 $SCRIPT_DIR/create-testhost-bond pxe-bond1 || true
