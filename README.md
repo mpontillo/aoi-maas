@@ -49,7 +49,7 @@ You will be logged into the MAAS CLI under the `root` profile:
 If you want to use a local mirror for your images, you can use the `aoi config`
 command to set the `maas_images_url` to your local mirror. For example:
 
-    $ aoi config set maas_images_url http://172.16.42.88/images/ephemeral-v2/daily/
+    $ aoi config set maas_images_url http://mirror.local/ephemeral-v3/daily/streams/v1/index.sjson
 
 The configuration is stored in `~/.aoi/config` in a JSON file.
 
