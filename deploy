@@ -25,6 +25,7 @@ function run {
     LOG_FILE=$(printf "$TMPDIR/%03d-deploy.log")
     local pretty_log="$(echo "[$(date '+%H:%M:%S')] $1...")"
     shift
+    echo "$pretty_log"
     echo "$pretty_log" >> $LOG_FILE
     echo "$pretty_log" >> $LOG_FILE.err
     echo "$@" >> $LOG_FILE

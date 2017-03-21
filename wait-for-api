@@ -3,4 +3,4 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source $SCRIPT_DIR/config.sh
 
-aoi-ssh maas "while ! curl -I --silent --fail http://localhost:5240/MAAS ; do sleep .5; done"
+aoi-ssh maas "while ! curl -I --silent --fail http://localhost:5240/MAAS/ ; do sleep .5; done"
