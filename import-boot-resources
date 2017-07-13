@@ -6,11 +6,11 @@ source $SCRIPT_DIR/config.sh
 echo "Importing boot resources..."
 aoi-ssh $INSTANCE maas $PROFILE boot-resources import
 
-function get_boot_resource_id {
+function get_boot_resource_ids {
     while [ 1 ]; do
-        BOOT_RESOURCE_ID=$(aoi-ssh $INSTANCE "maas $PROFILE boot-resources read | jq '.[0].id'")
-        if [ "$BOOT_RESOURCE_ID" != "null" -o "$BOOT_RESOURCE_ID" == "" ]; then
-            echo "$BOOT_RESOURCE_ID"
+        BOOT_RESOURCE_IDS=$(aoi-ssh $INSTANCE "maas $PROFILE boot-resources read | jq '.[].id'")
+        if [ "$BOOT_RESOURCE_IDS" != "null" -o "$BOOT_RESOURCE_ID" == "" ]; then
+            echo "$BOOT_RESOURCE_IDS"
             return
         fi
         sleep 0.5
@@ -20,8 +20,16 @@ function get_boot_resource_id {
 echo ""
 echo ""
 echo "Waiting for region to import boot resources..."
-BOOT_RESOURCE_ID=$(get_boot_resource_id)
-aoi-ssh $INSTANCE "while [ \"\$(maas $PROFILE boot-resource read $BOOT_RESOURCE_ID | jq '.[] | .[]? | .complete')\" != \"true\" ]; do sleep 0.5; done"
+while [ 1 ]; do
+    BOOT_RESOURCE_IDS=$(get_boot_resource_ids)
+    # Transform $BOOT_RESOURCE_IDS to clean up linefeeds.
+    BOOT_RESOURCE_IDS=$(echo $BOOT_RESOURCE_IDS)
+    RESULT=$(aoi-ssh $INSTANCE "for id in $BOOT_RESOURCE_IDS; do maas $PROFILE boot-resource read \$id | jq '.[] | .[]? | .complete'; done" | sort -u)
+    if [ "$RESULT" = "true" ]; then
+        break
+    fi
+    sleep 5
+done
 
 # Shortcut: The rack ID is the same as the region ID for the first rack.
 # So just read the rack ID from the file.
