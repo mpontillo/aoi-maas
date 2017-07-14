@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-TMPDIR="$(mktemp -d)"
+TMPDIR="$(mktemp -d /tmp/aoi-maas.XXXXXXXXXX)"
 VERBOSE=0
 
 if [ "$1" == "--verbose" -o "$1" == "-v" ]; then
