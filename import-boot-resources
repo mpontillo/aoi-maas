@@ -29,6 +29,9 @@ while [ 1 ]; do
         break
     fi
     sleep 5
+    # Try importing again. (It seems there might be a race condition that
+    # prevents it from working the first time.)
+    aoi-ssh $INSTANCE maas $PROFILE boot-resources import > /dev/null 2>&1
 done
 
 # Shortcut: The rack ID is the same as the region ID for the first rack.
