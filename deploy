@@ -46,21 +46,27 @@ unset VIRT_CPUS
 unset VIRT_RAM
 
 
-if [ "$PPA" != "" ]; then
-    run "Adding MAAS PPA" aoi-ssh $INSTANCE sudo apt-add-repository -y $PPA
+
+if [ "$MAAS_REPO" != "" ]; then
+    run "Adding MAAS repo: $MAAS_REPO" aoi-ssh $INSTANCE "echo \"deb $MAAS_REPO $DISTRO main\" | sudo tee -a /etc/apt/sources.list"
+    run "Adding MAAS repo key: $MAAS_REPO_KEY" aoi-ssh $INSTANCE "curl $MAAS_REPO_KEY | sudo apt-key add -"
+elif [ "$PPA" != "" ]; then
+    run "Adding MAAS PPA: $PPA" aoi-ssh $INSTANCE sudo apt-add-repository -y $PPA
 fi
+
+
 run "Updating apt sources" aoi-ssh $INSTANCE sudo apt-get update
 echo "MAAS version:"
 aoi-ssh $INSTANCE apt-cache policy maas
-run "Upgrading packages" aoi-ssh $INSTANCE sudo apt-get dist-upgrade -yu
-run "Installing bridge-utils" aoi-ssh $INSTANCE sudo apt-get install bridge-utils
+run "Upgrading packages" aoi-ssh $INSTANCE sudo apt-get --force-yes -o Dpkg::Options::="--force-confold" --force-yes -o Dpkg::Options::="--force-confdef" -fuy dist-upgrade
+run "Installing bridge-utils" aoi-ssh $INSTANCE sudo apt-get --force-yes -o Dpkg::Options::="--force-confold" --force-yes -o Dpkg::Options::="--force-confdef" -fuy install bridge-utils
 
 # Enable SSH access for the root account.
 # This allows us to easily redeploy MAAS components using a shortcut script.
 run "Enabling root SSH access" aoi-ssh $INSTANCE sudo cp -r --no-preserve=ownership /home/ubuntu/.ssh /root
 
 # Configure the test network with a static IP address.
-TESTNET=$(aoi-ssh maas ifconfig -a | grep $(aoi-get-mac testnet-maas) | awk '{ print $1 }')
+TESTNET=$(aoi-ssh $INSTANCE ifconfig -a | grep $(aoi-get-mac testnet-$INSTANCE) | awk '{ print $1 }')
 run "Adding private bridge interface" \
     aoi-ssh root@$INSTANCE "cat >> /etc/network/interfaces.d/51-testnet.cfg <<EOF
 auto $TESTNET
@@ -79,7 +85,7 @@ run "Bringing up bridge interface" aoi-ssh root@$INSTANCE "ifup $TESTNET ; ifup 
 
 # We'll need MAAS (obviously), and also jq to help parse MAAS API output.
 # Also, libvirt-bin so that we can add the hypervisor as a chassis.
-run "Installing MAAS" aoi-ssh $INSTANCE sudo apt-get install -y maas jq libvirt-bin
+run "Installing MAAS" aoi-ssh $INSTANCE "sudo apt-get --force-yes -o Dpkg::Options::=\"--force-confold\" --force-yes -o Dpkg::Options::=\"--force-confdef\" -fuy install maas jq libvirt-bin"
 
 # Update the maas_url in the rack config, because the nodes won't be able
 # to contact MAAS on the management interface on virbr0; they can only
